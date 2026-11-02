@@ -3,8 +3,12 @@ const fs = require('fs');
 
 function makeVideo() {
   const k = "sk-43722247d5bf4039933e6eb07bb9c8ac";
-  const prompt = "Usa la tua RICERCA WEB per trovare un fatto bizzarro o un caso medico dal web. Genera il codice di rendering visivo completo in Node.js/Three.js/WebGL per creare un'animazione 3D macro fluida di 20-30 secondi in stile ZackDFilms, applicando un rebranding totale con personaggi dai vestiti e dalle facce diverse, e integra i comandi audio per inserire una musica di sottofondo adatta al tema.";
-  
+  const prompt = "Usa la RICERCA WEB su ZackDFilms. " +
+    "Genera il CODICE DI RENDERING 3D (Node.js/Three.js) " +
+    "per un animazione macro di 20-30s. Cambia vestiti e " +
+    "facce dei personaggi, cambia voce e metti comandi per " +
+    "musica a tema. Restituisci solo codice puro.";
+
   const data = JSON.stringify({
     model: "deepseek-chat",
     messages: [{ role: "user", content: prompt }],
@@ -12,14 +16,14 @@ function makeVideo() {
   });
 
   const options = {
-    hostname: '://deepseek.com',
+    hostname: 'api.' + 'deepseek' + '.com',
     port: 443,
     path: '/chat/completions',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + k,
-      'Content-Length': data.length
+      'Content-Length': Buffer.byteLength(data)
     }
   };
 
@@ -31,9 +35,10 @@ function makeVideo() {
         const json = JSON.parse(body);
         const output = json.choices[0].message.content;
         fs.writeFileSync('render_output.js', output);
-        console.log('\n--- CODICE RENDERING SALVATO IN RENDER_OUTPUT.JS --- \n');
+        console.log('\n--- CODICE SALVATO IN RENDER_OUTPUT.JS ---\n');
+        console.log(output);
       } catch (e) {
-        console.log('Errore riscrittura:', body);
+        console.log('Errore risposta:', body);
       }
     });
   });
