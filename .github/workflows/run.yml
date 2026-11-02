@@ -1,0 +1,24 @@
+name: Video
+on: [workflow_dispatch]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          U1="https://api."
+          U2="deepseek"
+          U3=".com"
+          U4="/chat/completions"
+          curl -X POST "$U1$U2$U3$U4" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer sk-43722247d5bf4039933e6eb07bb9c8ac" \
+          -d '{
+            "model": "deepseek-chat",
+            "messages": [{
+              "role": "user",
+              "content": "Usa la RICERCA WEB su ZackDFilms. Genera il CODICE DI RENDERING 3D (Node.js/Three.js) per un animazione macro di 20-30s. Cambia vestiti e facce dei personaggi, cambia voce e metti comandi per musica a tema. Restituisci solo codice puro."
+            }],
+            "search_web": true
+          }' \
+          -o render_output.js
+      - run: cat render_output.js
