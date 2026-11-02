@@ -7,10 +7,36 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - run: npm install puppeteer
       - run: node generate.js
+      - run: |
+          mkdir -p frames
+          node -e '
+          const puppeteer = require("puppeteer");
+          const path = require("path");
+          (async () => {
+            const b = await puppeteer.launch({
+              args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader"]
+            });
+            const p = await b.newPage();
+            await p.setViewport({ width: 1080, height: 1920 });
+            await p.goto("file://" + path.resolve("scene.html"));
+            for (let i = 0; i < 300; i++) {
+              await p.evaluate((t) => {
+                if (window.renderFrame) window.renderFrame(t);
+              }, i / 15);
+              const f = String(i).padStart(4, "0");
+              await p.screenshot({ path: "frames/f_" + f + ".png" });
+            }
+            await b.close();
+          })();
+          '
+          ffmpeg -y -framerate 15 -i frames/f_%04d.png \
+            -f lavfi -i "aevalsrc=0.1*sin(2*PI*110*t)+0.05*sin(2*PI*165*t):d=20" \
+            -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest video_finale.mp4
       - run: |
           git config user.name "Bot"
           git config user.email "bot@bot"
-          git add render_output.js
-          git commit -m "Nuovo video 3D" || true
+          git add scene.html video_finale.mp4
+          git commit -m "Video MP4 pronto" || true
           git push
