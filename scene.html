@@ -1,191 +1,562 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<style>body{margin:0;overflow:hidden;background:#000;}canvas{display:block;}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zack D. Films Style – 3D Cross-Section Cutaway</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #070d19;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 1080px;
+            height: 1920px;
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+            box-shadow: 0 0 50px rgba(0, 150, 255, 0.2);
+        }
+    </style>
 </head>
 <body>
-<script src='./node_modules/three/build/three.min.js'></script>
-<script>
-const W=1080,H=1920;
-const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
-renderer.setSize(W,H);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
-document.body.appendChild(renderer.domElement);
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(45,W/H,0.1,200);
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            // --- 1. SCENE SETUP ---
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color('#070d19');
+            scene.fog = new THREE.FogExp2('#070d19', 0.02);
 
-// subtitle
-const sub=document.createElement('div');
-sub.style.cssText='position:absolute;bottom:120px;left:0;width:100%;text-align:center;color:#fff;font-family:Arial;font-size:42px;font-weight:bold;text-shadow:2px 2px 8px #000;padding:0 60px;box-sizing:border-box;';document.body.appendChild(sub);
+            const camera = new THREE.PerspectiveCamera(45, 1080 / 1920, 0.1, 1000);
+            camera.position.set(0, 5, 18);
 
-// lights
-const hemi=new THREE.HemisphereLight(0xffffff,0x444466,0.8);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff2d0,1.6);sun.position.set(8,15,10);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-30;sun.shadow.camera.right=30;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;scene.add(sun);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(1080, 1920);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
 
-// ============ ENV 1: BEDROOM ============
-const env1=new THREE.Group();
-const floorMat=new THREE.MeshPhysicalMaterial({color:0x8b5a3c,roughness:0.5,clearcoat:0.3});
-const floor=new THREE.Mesh(new THREE.BoxGeometry(20,0.3,20),floorMat);floor.position.y=-0.15;floor.receiveShadow=true;env1.add(floor);
-const wallMat=new THREE.MeshPhysicalMaterial({color:0xe8d5b7,roughness:0.8});
-const wall1=new THREE.Mesh(new THREE.BoxGeometry(20,12,0.3),wallMat);wall1.position.set(0,6,-10);wall1.receiveShadow=true;env1.add(wall1);
-const wall2=new THREE.Mesh(new THREE.BoxGeometry(0.3,12,20),wallMat);wall2.position.set(-10,6,0);wall2.receiveShadow=true;env1.add(wall2);
-// bed
-const bedMat=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.3,clearcoat:0.5});
-const bed=new THREE.Mesh(new THREE.BoxGeometry(6,1,8),bedMat);bed.position.set(0,0.5,2);bed.castShadow=true;bed.receiveShadow=true;env1.add(bed);
-const pillow=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.6,1.5),new THREE.MeshPhysicalMaterial({color:0xf0f0ff,roughness:0.9}));pillow.position.set(0,1.3,-1);pillow.castShadow=true;env1.add(pillow);
-const blanket=new THREE.Mesh(new THREE.BoxGeometry(6.2,0.4,5),new THREE.MeshPhysicalMaterial({color:0x4466aa,roughness:0.7}));blanket.position.set(0,1.1,3);blanket.castShadow=true;env1.add(blanket);
-// window light
-const winMat=new THREE.MeshPhysicalMaterial({color:0xaaddff,emissive:0x88bbff,emissiveIntensity:0.6,roughness:0.1});
-const win=new THREE.Mesh(new THREE.BoxGeometry(4,5,0.2),winMat);win.position.set(5,6,-9.8);env1.add(win);
-scene.add(env1);
+            // --- 2. STUDIO ENVIRONMENT ---
+            // Glowing blue/cyan studio floor grid
+            const gridHelper = new THREE.GridHelper(50, 50, 0x1e6091, 0x0f2c59);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
 
-// ============ ENV 2: HOSPITAL ROOM ============
-const env2=new THREE.Group();env2.visible=false;
-const tileMat=new THREE.MeshPhysicalMaterial({color:0xdde8ee,roughness:0.2,clearcoat:0.6});
-const tfloor=new THREE.Mesh(new THREE.BoxGeometry(20,0.3,20),tileMat);tfloor.position.y=-0.15;tfloor.receiveShadow=true;env2.add(tfloor);
-const hwallMat=new THREE.MeshPhysicalMaterial({color:0xf0f8ff,roughness:0.7});
-const hw1=new THREE.Mesh(new THREE.BoxGeometry(20,12,0.3),hwallMat);hw1.position.set(0,6,-10);hw1.receiveShadow=true;env2.add(hw1);
-const hw2=new THREE.Mesh(new THREE.BoxGeometry(0.3,12,20),hwallMat);hw2.position.set(-10,6,0);hw2.receiveShadow=true;env2.add(hw2);
-// hospital bed
-const hbed=new THREE.Mesh(new THREE.BoxGeometry(5,0.8,7),new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.3,clearcoat:0.5}));hbed.position.set(0,0.8,1);hbed.castShadow=true;env2.add(hbed);
-const hframe=new THREE.Mesh(new THREE.BoxGeometry(5.2,0.2,7.2),new THREE.MeshPhysicalMaterial({color:0x888888,metalness:0.8,roughness:0.3}));hframe.position.set(0,0.4,1);env2.add(hframe);
-// monitor
-const monMat=new THREE.MeshPhysicalMaterial({color:0x111111,roughness:0.3});
-const mon=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.4,0.3),monMat);mon.position.set(-6,4,0);env2.add(mon);
-const screenMat=new THREE.MeshPhysicalMaterial({color:0x00ff88,emissive:0x00ff88,emissiveIntensity:0.8});
-const screen=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.1),screenMat);screen.position.set(-6,4,0.16);env2.add(screen);
-scene.add(env2);
+            // Subtle glowing floor plane for reflection
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x0a1a2a,
+                emissive: 0x0a1a2a,
+                roughness: 0.8,
+                metalness: 0.2,
+                transparent: true,
+                opacity: 0.3
+            });
+            const floorPlane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), floorMat);
+            floorPlane.rotation.x = -Math.PI / 2;
+            floorPlane.position.y = -0.01;
+            floorPlane.receiveShadow = true;
+            scene.add(floorPlane);
 
-// ============ ENV 3: NEURAL / ABSTRACT BRAIN ROOM ============
-const env3=new THREE.Group();env3.visible=false;
-const darkMat=new THREE.MeshPhysicalMaterial({color:0x220033,roughness:0.4,clearcoat:0.8});
-const dfloor=new THREE.Mesh(new THREE.BoxGeometry(24,0.3,24),darkMat);dfloor.position.y=-0.15;dfloor.receiveShadow=true;env3.add(dfloor);
-// floating neuron spheres
-const neurons=[];
-for(let i=0;i<40;i++){
-  const nMat=new THREE.MeshPhysicalMaterial({color:0xff44aa,emissive:0xff2288,emissiveIntensity:0.5,roughness:0.2,clearcoat:1});
-  const n=new THREE.Mesh(new THREE.SphereGeometry(0.3+Math.random()*0.4,16,16),nMat);
-  n.position.set((Math.random()-0.5)*18,2+Math.random()*8,(Math.random()-0.5)*18);
-  n.userData.base=n.position.clone();n.userData.ph=Math.random()*Math.PI*2;
-  env3.add(n);neurons.push(n);
-}
-// central brain
-const brainMat=new THREE.MeshPhysicalMaterial({color:0xff6699,emissive:0xaa2255,emissiveIntensity:0.4,roughness:0.3,clearcoat:0.9});
-const brain=new THREE.Mesh(new THREE.SphereGeometry(2.5,32,32),brainMat);brain.position.set(0,5,0);brain.scale.set(1,0.85,1.2);env3.add(brain);
-scene.add(env3);
+            // --- 3. LIGHTING ---
+            // Warm directional key light
+            const keyLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+            keyLight.position.set(8, 15, 10);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 1024;
+            keyLight.shadow.mapSize.height = 1024;
+            keyLight.shadow.camera.near = 0.5;
+            keyLight.shadow.camera.far = 50;
+            keyLight.shadow.camera.left = -15;
+            keyLight.shadow.camera.right = 15;
+            keyLight.shadow.camera.top = 15;
+            keyLight.shadow.camera.bottom = -15;
+            keyLight.shadow.bias = -0.0005;
+            scene.add(keyLight);
 
-// ============ HUMANOID BUILDER ============
-function makeHuman(skin,shirt,pants){
-  const g=new THREE.Group();
-  const skinMat=new THREE.MeshPhysicalMaterial({color:skin,roughness:0.35,clearcoat:0.8});
-  const shirtMat=new THREE.MeshPhysicalMaterial({color:shirt,roughness:0.2,clearcoat:0.8});
-  const pantsMat=new THREE.MeshPhysicalMaterial({color:pants,roughness:0.3,clearcoat:0.8});
-  const hairMat=new THREE.MeshPhysicalMaterial({color:0x2a1a0a,roughness:0.4,clearcoat:0.6});
-  // torso
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.7,1.4,8,16),shirtMat);torso.position.y=2.2;torso.castShadow=true;g.add(torso);
-  // head
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.65,32,32),skinMat);head.position.y=3.6;head.castShadow=true;g.add(head);
-  // hair
-  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.68,32,32,0,Math.PI*2,0,Math.PI*0.55),hairMat);hair.position.y=3.75;g.add(hair);
-  // eyes
-  const eyeMat=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.1,clearcoat:1});
-  const pupilMat=new THREE.MeshPhysicalMaterial({color:0x111111,roughness:0.1,clearcoat:1});
-  const eL=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,16),eyeMat);eL.position.set(-0.22,3.7,0.55);g.add(eL);
-  const eR=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,16),eyeMat);eR.position.set(0.22,3.7,0.55);g.add(eR);
-  const pL=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12),pupilMat);pL.position.set(-0.22,3.7,0.66);g.add(pL);
-  const pR=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12),pupilMat);pR.position.set(0.22,3.7,0.66);g.add(pR);
-  // mouth
-  const mouth=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.04,8,16,Math.PI),new THREE.MeshPhysicalMaterial({color:0x882222,roughness:0.4}));mouth.position.set(0,3.35,0.6);mouth.rotation.z=Math.PI;g.add(mouth);
-  // arms
-  const armL=new THREE.Mesh(new THREE.CapsuleGeometry(0.18,1.1,6,12),shirtMat);armL.position.set(-0.9,2.3,0);armL.castShadow=true;g.add(armL);
-  const armR=new THREE.Mesh(new THREE.CapsuleGeometry(0.18,1.1,6,12),shirtMat);armR.position.set(0.9,2.3,0);armR.castShadow=true;g.add(armR);
-  // legs
-  const legL=new THREE.Mesh(new THREE.CapsuleGeometry(0.22,1.3,6,12),pantsMat);legL.position.set(-0.35,0.85,0);legL.castShadow=true;g.add(legL);
-  const legR=new THREE.Mesh(new THREE.CapsuleGeometry(0.22,1.3,6,12),pantsMat);legR.position.set(0.35,0.85,0);legR.castShadow=true;g.add(legR);
-  // shoes
-  const shoeMat=new THREE.MeshPhysicalMaterial({color:0x222222,roughness:0.3,clearcoat:0.7});
-  const sL=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.7),shoeMat);sL.position.set(-0.35,0.12,0.1);g.add(sL);
-  const sR=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.7),shoeMat);sR.position.set(0.35,0.12,0.1);g.add(sR);
-  g.userData={armL,armR,head,mouth,pL,pR};
-  return g;
-}
+            // Cool blue rim light
+            const rimLight = new THREE.DirectionalLight(0x4488ff, 0.8);
+            rimLight.position.set(-10, 5, -10);
+            scene.add(rimLight);
 
-const man=makeHuman(0xf0c8a0,0x3366cc,0x222244);man.position.set(0,0,0);man.rotation.y=Math.PI;scene.add(man);
-const wife=makeHuman(0xf5d0b0,0xcc4466,0x442266);wife.position.set(2.5,0,1);wife.rotation.y=Math.PI*0.85;scene.add(wife);
+            // Ambient fill
+            const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+            scene.add(ambientLight);
 
-// subtitle text
-const subs=[
-  {t:0,s:"He woke up convinced his wife was an impostor..."},
-  {t:5,s:"Capgras syndrome: the brain's recognition glitch."},
-  {t:10,s:"His eyes saw her face — but his heart felt nothing."},
-  {t:15,s:"Doctors found a lesion in his right hemisphere."},
-  {t:20,s:"Love, it turns out, lives in the wiring."}
-];
+            // Additional point light for drama
+            const pointLight = new THREE.PointLight(0x2266cc, 0.5, 30);
+            pointLight.position.set(0, 8, 5);
+            scene.add(pointLight);
 
-function setEnv(n){
-  env1.visible=n===1;env2.visible=n===2;env3.visible=n===3;
-  man.visible=n===1||n===2;wife.visible=n===1;
-  if(n===1){scene.background=new THREE.Color(0x2a1a2a);scene.fog=new THREE.Fog(0x2a1a2a,20,60);}
-  if(n===2){scene.background=new THREE.Color(0x1a2a3a);scene.fog=new THREE.Fog(0x1a2a3a,20,60);}
-  if(n===3){scene.background=new THREE.Color(0x110022);scene.fog=new THREE.Fog(0x110022,15,50);}
-}
+            // --- 4. HELPER: BLACK OUTLINE FUNCTION ---
+            function addOutlines(mesh, thresholdAngle = 15) {
+                const edges = new THREE.EdgesGeometry(mesh.geometry, thresholdAngle);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 }));
+                mesh.add(line);
+            }
 
-window.renderFrame=function(t){
-  // env switching
-  let env=1;
-  if(t>=8&&t<16)env=2;
-  else if(t>=16)env=3;
-  setEnv(env);
-  
-  // subtitles
-  let cur=subs[0].s;
-  for(const s of subs){if(t>=s.t)cur=s.s;}
-  sub.textContent=cur;
-  
-  // camera
-  if(env===1){
-    const p=t/8;
-    camera.position.set(Math.sin(p*0.8)*6,4+Math.sin(p*2)*0.3,10-p*2);
-    camera.lookAt(1,2.5,0.5);
-  } else if(env===2){
-    const p=(t-8)/8;
-    camera.position.set(-3+p*4,3.5,9-p*2);
-    camera.lookAt(0,2.5,0.5);
-  } else {
-    const p=(t-16)/9;
-    camera.position.set(Math.sin(p*1.5)*8,5,12-p*3);
-    camera.lookAt(0,5,0);
-  }
-  
-  // animate man
-  man.userData.armL.rotation.z=Math.sin(t*2)*0.15;
-  man.userData.armR.rotation.z=-Math.sin(t*2)*0.15;
-  man.userData.head.rotation.y=Math.sin(t*0.8)*0.2;
-  
-  // wife subtle motion
-  wife.userData.head.rotation.y=Math.sin(t*0.6+1)*0.15;
-  
-  // neurons float
-  neurons.forEach((n,i)=>{
-    n.position.y=n.userData.base.y+Math.sin(t*1.5+n.userData.ph)*0.5;
-    n.position.x=n.userData.base.x+Math.cos(t*0.8+n.userData.ph)*0.3;
-    n.rotation.y+=0.02;
-  });
-  
-  // brain pulse
-  if(env===3){
-    const s=1+Math.sin(t*3)*0.05;
-    brain.scale.set(s,s*0.85,s*1.2);
-    brain.rotation.y+=0.01;
-  }
-  
-  renderer.render(scene,camera);
-};
+            // --- 5. CHARACTER (Zack D. Style Mannequin) ---
+            const characterGroup = new THREE.Group();
+            characterGroup.position.set(0, 0, 0);
 
-// initial
-setEnv(1);
-renderer.render(scene,camera);
-</script>
+            const whiteMat = new THREE.MeshStandardMaterial({
+                color: 0xf0f0f0,
+                roughness: 0.3,
+                metalness: 0.1,
+                emissive: 0x111111
+            });
+            const greyMat = new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                roughness: 0.4,
+                metalness: 0.1
+            });
+
+            // Head (smooth rounded sphere)
+            const headGeo = new THREE.SphereGeometry(0.9, 32, 32);
+            const head = new THREE.Mesh(headGeo, whiteMat);
+            head.position.y = 3.8;
+            head.castShadow = true;
+            head.receiveShadow = true;
+            characterGroup.add(head);
+            addOutlines(head);
+
+            // Neck (cylinder)
+            const neckGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.6, 12);
+            const neck = new THREE.Mesh(neckGeo, greyMat);
+            neck.position.y = 3.0;
+            neck.castShadow = true;
+            neck.receiveShadow = true;
+            characterGroup.add(neck);
+            addOutlines(neck);
+
+            // Torso (rounded box / capsule-like)
+            const torsoGeo = new THREE.CylinderGeometry(0.9, 0.8, 2.0, 16);
+            const torso = new THREE.Mesh(torsoGeo, whiteMat);
+            torso.position.y = 1.8;
+            torso.castShadow = true;
+            torso.receiveShadow = true;
+            characterGroup.add(torso);
+            addOutlines(torso);
+
+            // Shoulders (spheres)
+            const shoulderGeo = new THREE.SphereGeometry(0.45, 16, 16);
+            const leftShoulder = new THREE.Mesh(shoulderGeo, greyMat);
+            leftShoulder.position.set(-1.0, 2.6, 0);
+            leftShoulder.castShadow = true;
+            leftShoulder.receiveShadow = true;
+            characterGroup.add(leftShoulder);
+            addOutlines(leftShoulder);
+
+            const rightShoulder = new THREE.Mesh(shoulderGeo, greyMat);
+            rightShoulder.position.set(1.0, 2.6, 0);
+            rightShoulder.castShadow = true;
+            rightShoulder.receiveShadow = true;
+            characterGroup.add(rightShoulder);
+            addOutlines(rightShoulder);
+
+            // Arms (cylinders)
+            const armGeo = new THREE.CylinderGeometry(0.25, 0.22, 1.6, 8);
+            const leftArm = new THREE.Mesh(armGeo, whiteMat);
+            leftArm.position.set(-1.0, 1.8, 0);
+            leftArm.rotation.z = 0.15;
+            leftArm.castShadow = true;
+            leftArm.receiveShadow = true;
+            characterGroup.add(leftArm);
+            addOutlines(leftArm);
+
+            const rightArm = new THREE.Mesh(armGeo, whiteMat);
+            rightArm.position.set(1.0, 1.8, 0);
+            rightArm.rotation.z = -0.15;
+            rightArm.castShadow = true;
+            rightArm.receiveShadow = true;
+            characterGroup.add(rightArm);
+            addOutlines(rightArm);
+
+            // Hands (spheres)
+            const handGeo = new THREE.SphereGeometry(0.3, 12, 12);
+            const leftHand = new THREE.Mesh(handGeo, greyMat);
+            leftHand.position.set(-1.1, 1.0, 0);
+            leftHand.castShadow = true;
+            leftHand.receiveShadow = true;
+            characterGroup.add(leftHand);
+            addOutlines(leftHand);
+
+            const rightHand = new THREE.Mesh(handGeo, greyMat);
+            rightHand.position.set(1.1, 1.0, 0);
+            rightHand.castShadow = true;
+            rightHand.receiveShadow = true;
+            characterGroup.add(rightHand);
+            addOutlines(rightHand);
+
+            // Legs (cylinders)
+            const legGeo = new THREE.CylinderGeometry(0.3, 0.25, 1.8, 8);
+            const leftLeg = new THREE.Mesh(legGeo, whiteMat);
+            leftLeg.position.set(-0.45, 0.0, 0);
+            leftLeg.castShadow = true;
+            leftLeg.receiveShadow = true;
+            characterGroup.add(leftLeg);
+            addOutlines(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, whiteMat);
+            rightLeg.position.set(0.45, 0.0, 0);
+            rightLeg.castShadow = true;
+            rightLeg.receiveShadow = true;
+            characterGroup.add(rightLeg);
+            addOutlines(rightLeg);
+
+            // Feet (flattened spheres)
+            const footGeo = new THREE.SphereGeometry(0.35, 12, 12);
+            const leftFoot = new THREE.Mesh(footGeo, greyMat);
+            leftFoot.position.set(-0.45, -0.9, 0.15);
+            leftFoot.scale.set(1, 0.5, 1.4);
+            leftFoot.castShadow = true;
+            leftFoot.receiveShadow = true;
+            characterGroup.add(leftFoot);
+            addOutlines(leftFoot);
+
+            const rightFoot = new THREE.Mesh(footGeo, greyMat);
+            rightFoot.position.set(0.45, -0.9, 0.15);
+            rightFoot.scale.set(1, 0.5, 1.4);
+            rightFoot.castShadow = true;
+            rightFoot.receiveShadow = true;
+            characterGroup.add(rightFoot);
+            addOutlines(rightFoot);
+
+            scene.add(characterGroup);
+
+            // --- 6. 3D CROSS-SECTION CUTAWAY (Underground Earth Layers) ---
+            const cutawayGroup = new THREE.Group();
+            cutawayGroup.position.set(0, -1.5, 0);
+
+            // Base earth block (cutaway box)
+            const earthMat = new THREE.MeshStandardMaterial({
+                color: 0x3a2a1a,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const earthGeo = new THREE.BoxGeometry(6, 3, 6);
+            const earthBlock = new THREE.Mesh(earthGeo, earthMat);
+            earthBlock.position.y = -1.5;
+            earthBlock.castShadow = true;
+            earthBlock.receiveShadow = true;
+            cutawayGroup.add(earthBlock);
+            addOutlines(earthBlock);
+
+            // Top soil layer (greenish)
+            const soilMat = new THREE.MeshStandardMaterial({
+                color: 0x4a6a3a,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const soilGeo = new THREE.BoxGeometry(6.2, 0.4, 6.2);
+            const soilLayer = new THREE.Mesh(soilGeo, soilMat);
+            soilLayer.position.y = 0.2;
+            soilLayer.castShadow = true;
+            soilLayer.receiveShadow = true;
+            cutawayGroup.add(soilLayer);
+            addOutlines(soilLayer);
+
+            // Rock layer (grey)
+            const rockMat = new THREE.MeshStandardMaterial({
+                color: 0x666666,
+                roughness: 0.7,
+                metalness: 0.2
+            });
+            const rockGeo = new THREE.BoxGeometry(5.8, 0.6, 5.8);
+            const rockLayer = new THREE.Mesh(rockGeo, rockMat);
+            rockLayer.position.y = -0.8;
+            rockLayer.castShadow = true;
+            rockLayer.receiveShadow = true;
+            cutawayGroup.add(rockLayer);
+            addOutlines(rockLayer);
+
+            // Deep earth layer (dark brown)
+            const deepMat = new THREE.MeshStandardMaterial({
+                color: 0x2a1a0a,
+                roughness: 0.95,
+                metalness: 0.05
+            });
+            const deepGeo = new THREE.BoxGeometry(5.6, 0.8, 5.6);
+            const deepLayer = new THREE.Mesh(deepGeo, deepMat);
+            deepLayer.position.y = -1.8;
+            deepLayer.castShadow = true;
+            deepLayer.receiveShadow = true;
+            cutawayGroup.add(deepLayer);
+            addOutlines(deepLayer);
+
+            // Core (glowing sphere)
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0xff4400,
+                emissive: 0xff2200,
+                emissiveIntensity: 0.8,
+                roughness: 0.3,
+                metalness: 0.1
+            });
+            const coreGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            core.position.y = -2.8;
+            core.castShadow = true;
+            core.receiveShadow = true;
+            cutawayGroup.add(core);
+            addOutlines(core);
+
+            // Internal pipes / mechanism (cylinders)
+            const pipeMat = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const pipeGeo = new THREE.CylinderGeometry(0.15, 0.15, 2.5, 8);
+            const pipe1 = new THREE.Mesh(pipeGeo, pipeMat);
+            pipe1.position.set(1.5, -1.0, 1.5);
+            pipe1.rotation.z = 0.3;
+            pipe1.castShadow = true;
+            pipe1.receiveShadow = true;
+            cutawayGroup.add(pipe1);
+            addOutlines(pipe1);
+
+            const pipe2 = new THREE.Mesh(pipeGeo, pipeMat);
+            pipe2.position.set(-1.5, -1.2, -1.5);
+            pipe2.rotation.x = 0.4;
+            pipe2.castShadow = true;
+            pipe2.receiveShadow = true;
+            cutawayGroup.add(pipe2);
+            addOutlines(pipe2);
+
+            // Glowing crystals / particles inside
+            const crystalMat = new THREE.MeshStandardMaterial({
+                color: 0x00aaff,
+                emissive: 0x0066cc,
+                emissiveIntensity: 1.5,
+                roughness: 0.2,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.9
+            });
+            const crystalGeo = new THREE.OctahedronGeometry(0.25);
+            for (let i = 0; i < 12; i++) {
+                const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+                const angle = (i / 12) * Math.PI * 2;
+                const radius = 1.8 + Math.random() * 0.8;
+                crystal.position.set(
+                    Math.cos(angle) * radius,
+                    -1.5 + Math.random() * 1.5,
+                    Math.sin(angle) * radius
+                );
+                crystal.castShadow = true;
+                crystal.receiveShadow = true;
+                cutawayGroup.add(crystal);
+                addOutlines(crystal);
+            }
+
+            scene.add(cutawayGroup);
+
+            // --- 7. PARTICLES (for activation phase) ---
+            const particleCount = 200;
+            const particleGeo = new THREE.BufferGeometry();
+            const particlePositions = new Float32Array(particleCount * 3);
+            const particleColors = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 2 + Math.random() * 4;
+                const height = -3 + Math.random() * 5;
+                particlePositions[i * 3] = Math.cos(angle) * radius;
+                particlePositions[i * 3 + 1] = height;
+                particlePositions[i * 3 + 2] = Math.sin(angle) * radius;
+                // Blue/cyan colors
+                particleColors[i * 3] = 0.2 + Math.random() * 0.3;
+                particleColors[i * 3 + 1] = 0.5 + Math.random() * 0.5;
+                particleColors[i * 3 + 2] = 1.0;
+            }
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+            particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+            const particleMat = new THREE.PointsMaterial({
+                size: 0.15,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const particles = new THREE.Points(particleGeo, particleMat);
+            particles.position.y = -1.5;
+            scene.add(particles);
+
+            // --- 8. ANIMATION STATE ---
+            let simulationTime = 0;
+            let lastTime = performance.now();
+            let isManual = false;
+
+            // Camera path variables
+            const camStartPos = new THREE.Vector3(0, 5, 18);
+            const camMidPos = new THREE.Vector3(0, 6, 22);
+            const camEndPos = new THREE.Vector3(0, 7, 24);
+
+            // --- 9. ANIMATION LOOP ---
+            function animate() {
+                if (!isManual) {
+                    const now = performance.now();
+                    const delta = (now - lastTime) / 1000;
+                    lastTime = now;
+                    simulationTime += delta;
+                    // Loop every 20 seconds
+                    if (simulationTime > 20) simulationTime -= 20;
+                }
+                updateScene(simulationTime);
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            }
+
+            // --- 10. SCENE UPDATE FUNCTION ---
+            function updateScene(t) {
+                // Normalize time to 0-20 range
+                const time = t % 20;
+
+                // --- Phase 1 (0-4s): Dramatic close-up on character ---
+                // --- Phase 2 (4-10s): Dolly back to reveal cutaway ---
+                // --- Phase 3 (10-15s): Internal mechanism activation ---
+                // --- Phase 4 (15-20s): Final payoff slow orbit ---
+
+                let camX, camY, camZ;
+                let lookAtX = 0, lookAtY = 2, lookAtZ = 0;
+
+                if (time < 4) {
+                    // Phase 1: Close-up on character face
+                    const p = time / 4;
+                    camX = 0;
+                    camY = 4.5 - p * 0.5;
+                    camZ = 8 - p * 1;
+                    lookAtY = 3.5;
+                } else if (time < 10) {
+                    // Phase 2: Dolly back to reveal cutaway
+                    const p = (time - 4) / 6;
+                    const ease = p * p * (3 - 2 * p); // smoothstep
+                    camX = 0;
+                    camY = 4.0 + ease * 2.0;
+                    camZ = 7 + ease * 15;
+                    lookAtY = 3.5 - ease * 2.5;
+                } else if (time < 15) {
+                    // Phase 3: Internal mechanism activation (slight zoom in, focus on cutaway)
+                    const p = (time - 10) / 5;
+                    const ease = p * p * (3 - 2 * p);
+                    camX = 0;
+                    camY = 6.0 - ease * 1.0;
+                    camZ = 22 - ease * 4;
+                    lookAtY = 1.0 - ease * 0.5;
+                } else {
+                    // Phase 4: Final payoff slow orbit
+                    const p = (time - 15) / 5;
+                    const angle = p * Math.PI * 0.8;
+                    const radius = 18;
+                    camX = Math.sin(angle) * radius;
+                    camY = 6.0 + Math.sin(p * Math.PI) * 1.5;
+                    camZ = Math.cos(angle) * radius;
+                    lookAtY = 0.5;
+                }
+
+                // Apply camera position
+                camera.position.set(camX, camY, camZ);
+                camera.lookAt(lookAtX, lookAtY, lookAtZ);
+
+                // --- Character subtle idle animation ---
+                const idleBob = Math.sin(time * 2) * 0.05;
+                characterGroup.position.y = idleBob;
+                // Slight head tilt
+                head.rotation.z = Math.sin(time * 1.5) * 0.05;
+                head.rotation.x = Math.sin(time * 1.2) * 0.03;
+
+                // --- Cutaway rotation (slow) ---
+                cutawayGroup.rotation.y = Math.sin(time * 0.3) * 0.1;
+
+                // --- Phase 3: Internal mechanism activation ---
+                if (time >= 10 && time < 15) {
+                    const p = (time - 10) / 5;
+                    // Core glow intensifies
+                    coreMat.emissiveIntensity = 0.8 + p * 2.0;
+                    coreMat.color.setHSL(0.05 + p * 0.05, 1, 0.5);
+                    // Crystals pulse
+                    crystalMat.emissiveIntensity = 1.5 + Math.sin(time * 10) * 0.5;
+                    // Particles become visible and swirl
+                    particles.material.opacity = 0.8;
+                    particles.rotation.y = time * 2;
+                    // Color shift to deep blue
+                    const blueShift = p * 0.5;
+                    scene.background.setHSL(0.6, 0.8, 0.05 + blueShift * 0.05);
+                    scene.fog.color.setHSL(0.6, 0.8, 0.05 + blueShift * 0.05);
+                    // Point light color shift
+                    pointLight.color.setHSL(0.6, 1, 0.5);
+                    pointLight.intensity = 0.5 + p * 1.5;
+                } else if (time >= 15) {
+                    // Phase 4: Payoff - keep some glow
+                    const p = (time - 15) / 5;
+                    coreMat.emissiveIntensity = 2.8 - p * 1.0;
+                    crystalMat.emissiveIntensity = 2.0 - p * 0.5;
+                    particles.material.opacity = 0.8 - p * 0.5;
+                    particles.rotation.y = time * 2;
+                    // Return to normal background
+                    scene.background.setHSL(0.6, 0.8, 0.05 + (1 - p) * 0.02);
+                    scene.fog.color.setHSL(0.6, 0.8, 0.05 + (1 - p) * 0.02);
+                    pointLight.color.setHSL(0.6, 1, 0.5);
+                    pointLight.intensity = 2.0 - p * 1.0;
+                } else {
+                    // Phase 1 & 2: Normal state
+                    coreMat.emissiveIntensity = 0.8;
+                    coreMat.color.setHSL(0.05, 1, 0.5);
+                    crystalMat.emissiveIntensity = 1.5;
+                    particles.material.opacity = 0.0;
+                    scene.background.setHSL(0.6, 0.8, 0.05);
+                    scene.fog.color.setHSL(0.6, 0.8, 0.05);
+                    pointLight.color.setHSL(0.6, 1, 0.5);
+                    pointLight.intensity = 0.5;
+                }
+
+                // Particle animation (always active but opacity controlled)
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    // Swirl around Y axis
+                    const angle = time * 0.5 + i * 0.1;
+                    const radius = 2 + Math.sin(time + i) * 1.5;
+                    positions[i3] = Math.cos(angle) * radius;
+                    positions[i3 + 1] = -1.5 + Math.sin(time * 0.8 + i * 0.5) * 2.0;
+                    positions[i3 + 2] = Math.sin(angle) * radius;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                // Grid floor pulse
+                gridHelper.material.opacity = 0.6 + Math.sin(time * 2) * 0.2;
+            }
+
+            // --- 11. EXPOSE setSimulationTime FOR FRAME-BY-FRAME RENDERING ---
+            window.setSimulationTime = function(seconds) {
+                isManual = true;
+                simulationTime = seconds;
+                updateScene(simulationTime);
+                renderer.render(scene, camera);
+            };
+
+            // --- 12. START ANIMATION ---
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', function() {
+                const width = 1080;
+                const height = 1920;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            });
+
+        })();
+    </script>
 </body>
 </html>
