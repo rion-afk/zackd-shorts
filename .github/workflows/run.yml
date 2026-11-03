@@ -1,47 +1,69 @@
-name: Video
-on: [workflow_dispatch]
+name: Genera ZackD Short
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'scene.html'
+      - 'voice.txt'
+      - 'video_finale.mp4'
+
+permissions:
+  contents: write
+
 jobs:
-  run:
+  build-video:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg python3-pip
-      - run: pip install edge-tts --break-system-packages
-      - run: npm install puppeteer three@0.128.0
-      - run: node generate.js
-      - run: edge-tts --voice en-US-ChristopherNeural --rate=+12% --pitch=-8Hz -f voice.txt --write-media voice.mp3
-      - run: |
-          mkdir -p frames
-          node -e '
-          const puppeteer = require("puppeteer");
-          const path = require("path");
-          (async () => {
-            const b = await puppeteer.launch({
-              args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"]
-            });
-            const p = await b.newPage();
-            await p.setViewport({ width: 1080, height: 1920 });
-            await p.goto("file://" + path.resolve("scene.html"));
-            await new Promise(r => setTimeout(r, 2000));
-            for (let i = 0; i < 375; i++) {
-              await p.evaluate((t) => {
-                if (window.renderFrame) window.renderFrame(t);
-              }, i / 15);
-              const f = String(i).padStart(4, "0");
-              await p.screenshot({ path: "frames/f_" + f + ".png" });
-            }
-            await b.close();
-          })();
-          '
-          ffmpeg -y -framerate 15 -i frames/f_%04d.png -i voice.mp3 \
-            -f lavfi -i "aevalsrc=0.03*sin(2*PI*55*t)+0.02*sin(2*PI*110*t):d=25" \
-            -filter_complex "[1:a]volume=1.6[v];[2:a]volume=0.35[m];[v][m]amix=inputs=2:duration=first[a]" \
-            -map 0:v -map "[a]" -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest video_finale.mp4
-      - run: |
-          git config user.name "Bot"
-          git config user.email "bot@bot"
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Configura Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installa FFmpeg, Edge-TTS e dipendenze Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg google-chrome-stable
+          pip install edge-tts --break-system-packages
+          npm init -y || true
+          npm install puppeteer
+
+      - name: 1. Cerca video Zack D. e genera scene.html + voice.txt con DeepSeek V4.1-Flash-1017
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: node generate.js
+
+      - name: 2. Genera la voce stile Zack D. (leggermente modificata) da voice.txt
+        run: |
+          edge-tts --file voice.txt --voice en-US-AndrewNeural --rate=+15% --pitch=-3Hz --write-media voice.mp3
+          ls -lh voice.mp3
+
+      - name: 3. Renderizza il video 3D da scene.html
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+        run: node render_output.js
+
+      - name: 4. Unisci la voce modificata a video_finale.mp4 (se non già unita)
+        run: |
+          if [ -f "video_finale.mp4" ] && [ -f "voice.mp3" ]; then
+            HAS_AUDIO=$(ffprobe -i video_finale.mp4 -show_streams -select_streams a -loglevel error)
+            if [ -z "$HAS_AUDIO" ]; then
+              echo "Aggiungo la traccia vocale stile Zack D. al video..."
+              ffmpeg -y -i video_finale.mp4 -i voice.mp3 -c:v copy -c:a aac -b:a 192k -shortest video_con_audio.mp4
+              mv video_con_audio.mp4 video_finale.mp4
+            fi
+          fi
+
+      - name: 5. Salva scene.html, voice.txt e video_finale.mp4 nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scene.html voice.txt video_finale.mp4
-          git commit -m "3D English Video" || true
+          git diff --staged --quiet || git commit -m "Nuovo video stile Zack D. generato con V4.1-Flash-1017"
           git push
