@@ -10,6 +10,10 @@ on:
       - 'voice.txt'
       - 'video_finale.mp4'
 
+concurrency:
+  group: zackd-video-pipeline
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -30,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg google-chrome-stable
-          pip install edge-tts --break-system-packages
+          pip install --upgrade edge-tts gTTS --break-system-packages
           npm init -y || true
           npm install puppeteer
 
@@ -39,9 +43,12 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: node generate.js
 
-      - name: 2. Genera la voce stile Zack D. (naturale) da voice.txt
+      - name: 2. Genera la voce stile Zack D. (con triplo fallback anti-errore)
         run: |
-          edge-tts --file voice.txt --voice en-US-BrianMultilingualNeural --rate=+12% --pitch=-2Hz --write-media voice.mp3
+          edge-tts --file voice.txt --voice en-US-BrianMultilingualNeural --rate=+10% --write-media voice.mp3 || \
+          edge-tts --file voice.txt --voice en-US-ChristopherNeural --write-media voice.mp3 || \
+          edge-tts --file voice.txt --voice en-US-GuyNeural --write-media voice.mp3 || \
+          gtts-cli -f voice.txt -l en --output voice.mp3
           ls -lh voice.mp3
 
       - name: 3. Renderizza il video 3D veloce (Upscale 1080x1920) da scene.html
@@ -65,4 +72,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scene.html voice.txt video_finale.mp4
-          git diff --staged --quiet || (git commit -m "Nuovo video 3D stile Zack D. (3 Agenti + Fast Render)" && git pull --rebase origin main && git push)
+          if ! git diff --staged --quiet; then
+            git commit -m "Nuovo video 3D stile Zack D. (3 Agenti + Fast Render)"
+            git pull --rebase -X ours origin main || true
+            git push origin HEAD:main --force
+          fi
