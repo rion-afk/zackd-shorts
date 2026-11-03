@@ -1,51 +1,191 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'><style>html,body{margin:0;padding:0;background:#000;overflow:hidden;width:1080px;height:1920px}canvas{display:block}</style></head><body><canvas id='c' width='1080' height='1920'></canvas><script>
-const cv=document.getElementById('c');const ctx=cv.getContext('2d');
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>body{margin:0;overflow:hidden;background:#000;}canvas{display:block;}</style>
+</head>
+<body>
+<script src='./node_modules/three/build/three.min.js'></script>
+<script>
 const W=1080,H=1920;
-function radialGloss(cx,cy,r,c1,c2,c3,shine){const g=ctx.createRadialGradient(cx-r*0.3,cy-r*0.3,r*0.05,cx,cy,r);g.addColorStop(0,c1);g.addColorStop(0.55,c2);g.addColorStop(1,c3);ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();if(shine){const s=ctx.createRadialGradient(cx-r*0.35,cy-r*0.4,r*0.01,cx-r*0.3,cy-r*0.35,r*0.5);s.addColorStop(0,'rgba(255,255,255,0.9)');s.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=s;ctx.beginPath();ctx.arc(cx-r*0.3,cy-r*0.35,r*0.45,0,Math.PI*2);ctx.fill();}}
-function drawPerson(cx,cy,scale,t,skin,torso){const bob=Math.sin(t*2)*8*scale;cy+=bob;
-// legs
-ctx.fillStyle=torso;ctx.save();ctx.translate(cx,cy);
-// torso
-ctx.beginPath();ctx.ellipse(0,0,90*scale,130*scale,0,0,Math.PI*2);ctx.fillStyle=torso;ctx.fill();
-// shirt gradient
-const tg=ctx.createLinearGradient(-90*scale,-130*scale,90*scale,130*scale);tg.addColorStop(0,'rgba(255,255,255,0.35)');tg.addColorStop(1,'rgba(0,0,0,0.25)');ctx.fillStyle=tg;ctx.beginPath();ctx.ellipse(0,0,90*scale,130*scale,0,0,Math.PI*2);ctx.fill();
-// head
-radialGloss(0,-175*scale,70*scale,skin,skin,'#b07050',true);
-// hair
-ctx.fillStyle='#2a1a0a';ctx.beginPath();ctx.arc(0,-195*scale,68*scale,Math.PI*1.05,Math.PI*1.95);ctx.fill();
-// eyes
-ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-25*scale,-180*scale,14*scale,0,Math.PI*2);ctx.arc(25*scale,-180*scale,14*scale,0,Math.PI*2);ctx.fill();
-const blink=Math.sin(t*3)>0.95?0.15:1;ctx.fillStyle='#1a3a6a';ctx.beginPath();ctx.ellipse(-25*scale,-180*scale,8*scale,8*scale*blink,0,0,Math.PI*2);ctx.ellipse(25*scale,-180*scale,8*scale,8*scale*blink,0,0,Math.PI*2);ctx.fill();
-ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-27*scale,-182*scale,3*scale,0,Math.PI*2);ctx.arc(23*scale,-182*scale,3*scale,0,Math.PI*2);ctx.fill();
-// mouth
-ctx.strokeStyle='#8a3030';ctx.lineWidth=3*scale;ctx.beginPath();ctx.arc(0,-150*scale,12*scale,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
-ctx.restore();}
-function drawBrain(cx,cy,r,t){radialGloss(cx,cy,r,'#ffb0c0','#e06080','#801030',true);
-ctx.strokeStyle='rgba(120,20,50,0.7)';ctx.lineWidth=6;for(let i=0;i<12;i++){const a=i/12*Math.PI*2+Math.sin(t+i)*0.1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.quadraticCurveTo(cx+Math.cos(a)*r*0.6,cy+Math.sin(a)*r*0.6,cx+Math.cos(a)*r*0.9,cy+Math.sin(a)*r*0.9);ctx.stroke();}
-// pulses
-for(let i=0;i<5;i++){const p=(t*0.6+i*0.2)%1;ctx.fillStyle='rgba(255,240,120,'+(1-p)+')';const a=i/5*Math.PI*2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*r*0.7*p,cy+Math.sin(a)*r*0.7*p,10*(1-p)+3,0,Math.PI*2);ctx.fill();}}
-function drawLimb(cx,cy,t,ghost){ctx.save();ctx.globalAlpha=ghost?0.45+Math.sin(t*4)*0.2:1;
-ctx.fillStyle=ghost?'#60d0ff':'#e8b090';ctx.beginPath();ctx.ellipse(cx,cy,50,140,0,0,Math.PI*2);ctx.fill();
-const g=ctx.createLinearGradient(cx-50,cy,cx+50,cy);g.addColorStop(0,'rgba(255,255,255,0.5)');g.addColorStop(1,'rgba(0,0,0,0.3)');ctx.fillStyle=g;ctx.fill();
-if(ghost){ctx.strokeStyle='rgba(120,220,255,0.8)';ctx.lineWidth=4;ctx.setLineDash([12,10]);ctx.beginPath();ctx.ellipse(cx,cy,50,140,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
-ctx.restore();}
-function caption(txt,sub,alpha,y){ctx.textAlign='center';ctx.font='bold 78px Arial Black,sans-serif';ctx.lineWidth=12;ctx.strokeStyle='rgba(0,0,0,'+alpha+')';ctx.strokeText(txt,W/2,y);const g=ctx.createLinearGradient(0,y-70,0,y+20);g.addColorStop(0,'#ffffff');g.addColorStop(0.5,'#ffe000');g.addColorStop(1,'#ffb000');ctx.fillStyle=g;ctx.globalAlpha=alpha;ctx.fillText(txt,W/2,y);ctx.globalAlpha=1;if(sub){ctx.font='bold 44px Arial';ctx.lineWidth=8;ctx.strokeStyle='rgba(0,0,0,'+alpha+')';ctx.strokeText(sub,W/2,y+65);ctx.fillStyle='#fff';ctx.globalAlpha=alpha;ctx.fillText(sub,W/2,y+65);ctx.globalAlpha=1;}}
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(W,H);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
+document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,W/H,0.1,200);
+
+// subtitle
+const sub=document.createElement('div');
+sub.style.cssText='position:absolute;bottom:120px;left:0;width:100%;text-align:center;color:#fff;font-family:Arial;font-size:42px;font-weight:bold;text-shadow:2px 2px 8px #000;padding:0 60px;box-sizing:border-box;';document.body.appendChild(sub);
+
+// lights
+const hemi=new THREE.HemisphereLight(0xffffff,0x444466,0.8);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff2d0,1.6);sun.position.set(8,15,10);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-30;sun.shadow.camera.right=30;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;scene.add(sun);
+
+// ============ ENV 1: BEDROOM ============
+const env1=new THREE.Group();
+const floorMat=new THREE.MeshPhysicalMaterial({color:0x8b5a3c,roughness:0.5,clearcoat:0.3});
+const floor=new THREE.Mesh(new THREE.BoxGeometry(20,0.3,20),floorMat);floor.position.y=-0.15;floor.receiveShadow=true;env1.add(floor);
+const wallMat=new THREE.MeshPhysicalMaterial({color:0xe8d5b7,roughness:0.8});
+const wall1=new THREE.Mesh(new THREE.BoxGeometry(20,12,0.3),wallMat);wall1.position.set(0,6,-10);wall1.receiveShadow=true;env1.add(wall1);
+const wall2=new THREE.Mesh(new THREE.BoxGeometry(0.3,12,20),wallMat);wall2.position.set(-10,6,0);wall2.receiveShadow=true;env1.add(wall2);
+// bed
+const bedMat=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.3,clearcoat:0.5});
+const bed=new THREE.Mesh(new THREE.BoxGeometry(6,1,8),bedMat);bed.position.set(0,0.5,2);bed.castShadow=true;bed.receiveShadow=true;env1.add(bed);
+const pillow=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.6,1.5),new THREE.MeshPhysicalMaterial({color:0xf0f0ff,roughness:0.9}));pillow.position.set(0,1.3,-1);pillow.castShadow=true;env1.add(pillow);
+const blanket=new THREE.Mesh(new THREE.BoxGeometry(6.2,0.4,5),new THREE.MeshPhysicalMaterial({color:0x4466aa,roughness:0.7}));blanket.position.set(0,1.1,3);blanket.castShadow=true;env1.add(blanket);
+// window light
+const winMat=new THREE.MeshPhysicalMaterial({color:0xaaddff,emissive:0x88bbff,emissiveIntensity:0.6,roughness:0.1});
+const win=new THREE.Mesh(new THREE.BoxGeometry(4,5,0.2),winMat);win.position.set(5,6,-9.8);env1.add(win);
+scene.add(env1);
+
+// ============ ENV 2: HOSPITAL ROOM ============
+const env2=new THREE.Group();env2.visible=false;
+const tileMat=new THREE.MeshPhysicalMaterial({color:0xdde8ee,roughness:0.2,clearcoat:0.6});
+const tfloor=new THREE.Mesh(new THREE.BoxGeometry(20,0.3,20),tileMat);tfloor.position.y=-0.15;tfloor.receiveShadow=true;env2.add(tfloor);
+const hwallMat=new THREE.MeshPhysicalMaterial({color:0xf0f8ff,roughness:0.7});
+const hw1=new THREE.Mesh(new THREE.BoxGeometry(20,12,0.3),hwallMat);hw1.position.set(0,6,-10);hw1.receiveShadow=true;env2.add(hw1);
+const hw2=new THREE.Mesh(new THREE.BoxGeometry(0.3,12,20),hwallMat);hw2.position.set(-10,6,0);hw2.receiveShadow=true;env2.add(hw2);
+// hospital bed
+const hbed=new THREE.Mesh(new THREE.BoxGeometry(5,0.8,7),new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.3,clearcoat:0.5}));hbed.position.set(0,0.8,1);hbed.castShadow=true;env2.add(hbed);
+const hframe=new THREE.Mesh(new THREE.BoxGeometry(5.2,0.2,7.2),new THREE.MeshPhysicalMaterial({color:0x888888,metalness:0.8,roughness:0.3}));hframe.position.set(0,0.4,1);env2.add(hframe);
+// monitor
+const monMat=new THREE.MeshPhysicalMaterial({color:0x111111,roughness:0.3});
+const mon=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.4,0.3),monMat);mon.position.set(-6,4,0);env2.add(mon);
+const screenMat=new THREE.MeshPhysicalMaterial({color:0x00ff88,emissive:0x00ff88,emissiveIntensity:0.8});
+const screen=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.1),screenMat);screen.position.set(-6,4,0.16);env2.add(screen);
+scene.add(env2);
+
+// ============ ENV 3: NEURAL / ABSTRACT BRAIN ROOM ============
+const env3=new THREE.Group();env3.visible=false;
+const darkMat=new THREE.MeshPhysicalMaterial({color:0x220033,roughness:0.4,clearcoat:0.8});
+const dfloor=new THREE.Mesh(new THREE.BoxGeometry(24,0.3,24),darkMat);dfloor.position.y=-0.15;dfloor.receiveShadow=true;env3.add(dfloor);
+// floating neuron spheres
+const neurons=[];
+for(let i=0;i<40;i++){
+  const nMat=new THREE.MeshPhysicalMaterial({color:0xff44aa,emissive:0xff2288,emissiveIntensity:0.5,roughness:0.2,clearcoat:1});
+  const n=new THREE.Mesh(new THREE.SphereGeometry(0.3+Math.random()*0.4,16,16),nMat);
+  n.position.set((Math.random()-0.5)*18,2+Math.random()*8,(Math.random()-0.5)*18);
+  n.userData.base=n.position.clone();n.userData.ph=Math.random()*Math.PI*2;
+  env3.add(n);neurons.push(n);
+}
+// central brain
+const brainMat=new THREE.MeshPhysicalMaterial({color:0xff6699,emissive:0xaa2255,emissiveIntensity:0.4,roughness:0.3,clearcoat:0.9});
+const brain=new THREE.Mesh(new THREE.SphereGeometry(2.5,32,32),brainMat);brain.position.set(0,5,0);brain.scale.set(1,0.85,1.2);env3.add(brain);
+scene.add(env3);
+
+// ============ HUMANOID BUILDER ============
+function makeHuman(skin,shirt,pants){
+  const g=new THREE.Group();
+  const skinMat=new THREE.MeshPhysicalMaterial({color:skin,roughness:0.35,clearcoat:0.8});
+  const shirtMat=new THREE.MeshPhysicalMaterial({color:shirt,roughness:0.2,clearcoat:0.8});
+  const pantsMat=new THREE.MeshPhysicalMaterial({color:pants,roughness:0.3,clearcoat:0.8});
+  const hairMat=new THREE.MeshPhysicalMaterial({color:0x2a1a0a,roughness:0.4,clearcoat:0.6});
+  // torso
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.7,1.4,8,16),shirtMat);torso.position.y=2.2;torso.castShadow=true;g.add(torso);
+  // head
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.65,32,32),skinMat);head.position.y=3.6;head.castShadow=true;g.add(head);
+  // hair
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.68,32,32,0,Math.PI*2,0,Math.PI*0.55),hairMat);hair.position.y=3.75;g.add(hair);
+  // eyes
+  const eyeMat=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0.1,clearcoat:1});
+  const pupilMat=new THREE.MeshPhysicalMaterial({color:0x111111,roughness:0.1,clearcoat:1});
+  const eL=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,16),eyeMat);eL.position.set(-0.22,3.7,0.55);g.add(eL);
+  const eR=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,16),eyeMat);eR.position.set(0.22,3.7,0.55);g.add(eR);
+  const pL=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12),pupilMat);pL.position.set(-0.22,3.7,0.66);g.add(pL);
+  const pR=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12),pupilMat);pR.position.set(0.22,3.7,0.66);g.add(pR);
+  // mouth
+  const mouth=new THREE.Mesh(new THREE.TorusGeometry(0.15,0.04,8,16,Math.PI),new THREE.MeshPhysicalMaterial({color:0x882222,roughness:0.4}));mouth.position.set(0,3.35,0.6);mouth.rotation.z=Math.PI;g.add(mouth);
+  // arms
+  const armL=new THREE.Mesh(new THREE.CapsuleGeometry(0.18,1.1,6,12),shirtMat);armL.position.set(-0.9,2.3,0);armL.castShadow=true;g.add(armL);
+  const armR=new THREE.Mesh(new THREE.CapsuleGeometry(0.18,1.1,6,12),shirtMat);armR.position.set(0.9,2.3,0);armR.castShadow=true;g.add(armR);
+  // legs
+  const legL=new THREE.Mesh(new THREE.CapsuleGeometry(0.22,1.3,6,12),pantsMat);legL.position.set(-0.35,0.85,0);legL.castShadow=true;g.add(legL);
+  const legR=new THREE.Mesh(new THREE.CapsuleGeometry(0.22,1.3,6,12),pantsMat);legR.position.set(0.35,0.85,0);legR.castShadow=true;g.add(legR);
+  // shoes
+  const shoeMat=new THREE.MeshPhysicalMaterial({color:0x222222,roughness:0.3,clearcoat:0.7});
+  const sL=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.7),shoeMat);sL.position.set(-0.35,0.12,0.1);g.add(sL);
+  const sR=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.7),shoeMat);sR.position.set(0.35,0.12,0.1);g.add(sR);
+  g.userData={armL,armR,head,mouth,pL,pR};
+  return g;
+}
+
+const man=makeHuman(0xf0c8a0,0x3366cc,0x222244);man.position.set(0,0,0);man.rotation.y=Math.PI;scene.add(man);
+const wife=makeHuman(0xf5d0b0,0xcc4466,0x442266);wife.position.set(2.5,0,1);wife.rotation.y=Math.PI*0.85;scene.add(wife);
+
+// subtitle text
+const subs=[
+  {t:0,s:"He woke up convinced his wife was an impostor..."},
+  {t:5,s:"Capgras syndrome: the brain's recognition glitch."},
+  {t:10,s:"His eyes saw her face — but his heart felt nothing."},
+  {t:15,s:"Doctors found a lesion in his right hemisphere."},
+  {t:20,s:"Love, it turns out, lives in the wiring."}
+];
+
+function setEnv(n){
+  env1.visible=n===1;env2.visible=n===2;env3.visible=n===3;
+  man.visible=n===1||n===2;wife.visible=n===1;
+  if(n===1){scene.background=new THREE.Color(0x2a1a2a);scene.fog=new THREE.Fog(0x2a1a2a,20,60);}
+  if(n===2){scene.background=new THREE.Color(0x1a2a3a);scene.fog=new THREE.Fog(0x1a2a3a,20,60);}
+  if(n===3){scene.background=new THREE.Color(0x110022);scene.fog=new THREE.Fog(0x110022,15,50);}
+}
+
 window.renderFrame=function(t){
-// bg gradient
-const bg=ctx.createRadialGradient(W/2,H/2,100,W/2,H/2,1200);bg.addColorStop(0,'#1a0a20');bg.addColorStop(0.6,'#0a0410');bg.addColorStop(1,'#000');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-// floating particles
-for(let i=0;i<60;i++){const x=(i*137+t*30)%W;const y=(i*271+t*15)%H;ctx.fillStyle='rgba(120,180,255,'+(0.1+0.1*Math.sin(t+i))+')';ctx.beginPath();ctx.arc(x,y,2+Math.sin(t+i)*1.5,0,Math.PI*2);ctx.fill();}
-// scene phases
-if(t<8){drawPerson(W/2,H/2+150,1.6,t,'#e8b090','#3a6ac0');drawLimb(W/2-260,H/2+420,t,true);
- caption('ARTO FANTASMA',t<4?'Il corpo c\'è, ma non c\'è':'“Sento la gamba muoversi”',Math.min(1,t*1.5),(t<4?500:600));
-} else if(t<16){drawBrain(W/2,H/2-100,240,t);
- caption('IL CERVELLO RICOSTRUISCE','Mappa neuronale che si riscrive',Math.min(1,(t-8)*2),500);
- // zoom veins
- ctx.strokeStyle='rgba(255,120,150,0.5)';ctx.lineWidth=3;for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(W/2,H/2-100);const a=t*0.5+i;ctx.lineTo(W/2+Math.cos(a)*400,H/2-100+Math.sin(a)*400);ctx.stroke();}
-} else {drawPerson(W/2,H/2+150,1.6,t,'#e8b090','#3a6ac0');drawLimb(W/2-260,H/2+420,t,true);drawBrain(W/2+300,H/2-450,110,t);
- caption('REALE QUANTO VERO','La mente non dimentica',Math.min(1,(t-16)*2),500);}
-// vignette
-const vg=ctx.createRadialGradient(W/2,H/2,400,W/2,H/2,1100);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.75)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  // env switching
+  let env=1;
+  if(t>=8&&t<16)env=2;
+  else if(t>=16)env=3;
+  setEnv(env);
+  
+  // subtitles
+  let cur=subs[0].s;
+  for(const s of subs){if(t>=s.t)cur=s.s;}
+  sub.textContent=cur;
+  
+  // camera
+  if(env===1){
+    const p=t/8;
+    camera.position.set(Math.sin(p*0.8)*6,4+Math.sin(p*2)*0.3,10-p*2);
+    camera.lookAt(1,2.5,0.5);
+  } else if(env===2){
+    const p=(t-8)/8;
+    camera.position.set(-3+p*4,3.5,9-p*2);
+    camera.lookAt(0,2.5,0.5);
+  } else {
+    const p=(t-16)/9;
+    camera.position.set(Math.sin(p*1.5)*8,5,12-p*3);
+    camera.lookAt(0,5,0);
+  }
+  
+  // animate man
+  man.userData.armL.rotation.z=Math.sin(t*2)*0.15;
+  man.userData.armR.rotation.z=-Math.sin(t*2)*0.15;
+  man.userData.head.rotation.y=Math.sin(t*0.8)*0.2;
+  
+  // wife subtle motion
+  wife.userData.head.rotation.y=Math.sin(t*0.6+1)*0.15;
+  
+  // neurons float
+  neurons.forEach((n,i)=>{
+    n.position.y=n.userData.base.y+Math.sin(t*1.5+n.userData.ph)*0.5;
+    n.position.x=n.userData.base.x+Math.cos(t*0.8+n.userData.ph)*0.3;
+    n.rotation.y+=0.02;
+  });
+  
+  // brain pulse
+  if(env===3){
+    const s=1+Math.sin(t*3)*0.05;
+    brain.scale.set(s,s*0.85,s*1.2);
+    brain.rotation.y+=0.01;
+  }
+  
+  renderer.render(scene,camera);
 };
-renderFrame(0);
-</script></body></html>
+
+// initial
+setEnv(1);
+renderer.render(scene,camera);
+</script>
+</body>
+</html>
