@@ -9,19 +9,22 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg python3-pip
       - run: pip install edge-tts --break-system-packages
-      - run: npm install puppeteer
+      - run: npm install puppeteer three@0.128.0
       - run: node generate.js
-      - run: edge-tts --voice it-IT-GiuseppeNeural --rate=+10% --pitch=-5Hz -f voice.txt --write-media voice.mp3
+      - run: edge-tts --voice en-US-ChristopherNeural --rate=+12% --pitch=-8Hz -f voice.txt --write-media voice.mp3
       - run: |
           mkdir -p frames
           node -e '
           const puppeteer = require("puppeteer");
           const path = require("path");
           (async () => {
-            const b = await puppeteer.launch({ args: ["--no-sandbox"] });
+            const b = await puppeteer.launch({
+              args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"]
+            });
             const p = await b.newPage();
             await p.setViewport({ width: 1080, height: 1920 });
             await p.goto("file://" + path.resolve("scene.html"));
+            await new Promise(r => setTimeout(r, 2000));
             for (let i = 0; i < 375; i++) {
               await p.evaluate((t) => {
                 if (window.renderFrame) window.renderFrame(t);
@@ -33,12 +36,12 @@ jobs:
           })();
           '
           ffmpeg -y -framerate 15 -i frames/f_%04d.png -i voice.mp3 \
-            -f lavfi -i "aevalsrc=0.03*sin(2*PI*65*t)+0.02*sin(2*PI*98*t):d=25" \
-            -filter_complex "[1:a]volume=1.5[v];[2:a]volume=0.4[m];[v][m]amix=inputs=2:duration=first[a]" \
+            -f lavfi -i "aevalsrc=0.03*sin(2*PI*55*t)+0.02*sin(2*PI*110*t):d=25" \
+            -filter_complex "[1:a]volume=1.6[v];[2:a]volume=0.35[m];[v][m]amix=inputs=2:duration=first[a]" \
             -map 0:v -map "[a]" -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest video_finale.mp4
       - run: |
           git config user.name "Bot"
           git config user.email "bot@bot"
           git add scene.html voice.txt video_finale.mp4
-          git commit -m "Video con voce e grafica" || true
+          git commit -m "3D English Video" || true
           git push
