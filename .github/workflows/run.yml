@@ -34,27 +34,27 @@ jobs:
           npm init -y || true
           npm install puppeteer
 
-      - name: 1. Cerca video Zack D. e genera scene.html + voice.txt con DeepSeek V4.1-Flash-1017
+      - name: 1. Cerca video Zack D. e genera scene.html + voice.txt (3 Agenti DeepSeek)
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: node generate.js
 
-      - name: 2. Genera la voce stile Zack D. (leggermente modificata) da voice.txt
+      - name: 2. Genera la voce stile Zack D. (naturale) da voice.txt
         run: |
-          edge-tts --file voice.txt --voice en-US-AndrewNeural --rate=+15% --pitch=-3Hz --write-media voice.mp3
+          edge-tts --file voice.txt --voice en-US-BrianMultilingualNeural --rate=+12% --pitch=-2Hz --write-media voice.mp3
           ls -lh voice.mp3
 
-      - name: 3. Renderizza il video 3D da scene.html
+      - name: 3. Renderizza il video 3D veloce (Upscale 1080x1920) da scene.html
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
         run: node render_output.js
 
-      - name: 4. Unisci la voce modificata a video_finale.mp4 (se non già unita)
+      - name: 4. Verifica e unisci la traccia vocale a video_finale.mp4
         run: |
           if [ -f "video_finale.mp4" ] && [ -f "voice.mp3" ]; then
             HAS_AUDIO=$(ffprobe -i video_finale.mp4 -show_streams -select_streams a -loglevel error)
             if [ -z "$HAS_AUDIO" ]; then
-              echo "Aggiungo la traccia vocale stile Zack D. al video..."
+              echo "Aggiungo la traccia vocale a video_finale.mp4..."
               ffmpeg -y -i video_finale.mp4 -i voice.mp3 -c:v copy -c:a aac -b:a 192k -shortest video_con_audio.mp4
               mv video_con_audio.mp4 video_finale.mp4
             fi
@@ -65,5 +65,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scene.html voice.txt video_finale.mp4
-          git diff --staged --quiet || git commit -m "Nuovo video stile Zack D. generato con V4.1-Flash-1017"
-          git push
+          git diff --staged --quiet || (git commit -m "Nuovo video 3D stile Zack D. (3 Agenti + Fast Render)" && git pull --rebase origin main && git push)
