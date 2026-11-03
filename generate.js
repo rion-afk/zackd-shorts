@@ -58,7 +58,7 @@ async function runMultiAgentPipeline() {
     `You are Agent 1 (Creative Director & Technical Planner) for viral 3D YouTube Shorts in the style of Zack D. Films and TaleTok.
 Return ONLY valid JSON with two keys:
 {
-  "voice_script": "60-70 word punchy English script. Sentence 1 MUST be a bizarre paradox or instant action hook. Middle sentence MUST start with 'You see,'. Fast-paced, zero fluff.",
+  "voice_script": "60-70 word punchy English script. Sentence 1 MUST be a bizarre paradox or instant action hook. Middle sentence MUST start with 'You see,'. Fast-paced, zero fluff, plain text only.",
   "visual_plan": "Detailed 3D cutaway breakdown: 4 distinct underground/internal cutaway layers, exact character clothing colors (hoodie, pants, shoes, hair), moving mechanical/anatomical parts, particle effects, and 4 smooth camera movements across 20 seconds."
 }`,
     `Pick a fascinating historical survival trap, engineering mechanism, or human body cutaway concept in the style of Zack D. Films. Slightly adapt the script and give the character modern streetwear clothing. Output JSON only.`,
@@ -77,7 +77,9 @@ Return ONLY valid JSON with two keys:
     console.log("Uso piano testuale diretto dall'Agente 1.");
   }
 
-  fs.writeFileSync("voice.txt", voiceScript.trim(), "utf8");
+  // Pulisce caratteri speciali per evitare che Edge-TTS si blocchi
+  voiceScript = voiceScript.replace(/[*_#`~<>]/g, "").replace(/\s+/g, " ").trim();
+  fs.writeFileSync("voice.txt", voiceScript, "utf8");
   console.log("Script salvato in voice.txt:", voiceScript);
 
   console.log("=== AGENTE 2: Costruzione Mondo 3D Three.js e Texture Dipinte via Codice ===");
