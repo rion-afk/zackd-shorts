@@ -18,7 +18,7 @@ function makeVideo() {
 
   const data = JSON.stringify({
     model: "deepseek-chat",
-    max_tokens: 8000,i
+    max_tokens: 8000,
     temperature: 0.6,
     messages: Array.of({ role: "user", content: prompt }),
     response_format: { type: "json_object" },
